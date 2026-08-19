@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>V1.02 AI 教學知識庫 - 新增分享</title>
+  <title>AI 教學知識庫 - 新增分享</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { font-family: "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif; }
@@ -269,12 +269,17 @@
 
     // ===================== 圖片連結處理 =====================
     function normalizeDriveUrl(url) {
-      // 把 Google Drive 分享連結轉成可直接顯示的格式
-      const fileIdMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-      if (fileIdMatch) {
-        return `https://drive.google.com/uc?export=view&id=${fileIdMatch[1]}`;
+      // 抽出 file id，轉成較穩定的 thumbnail 格式
+      let id = "";
+      const m1 = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      const m2 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      if (m1) id = m1[1];
+      else if (m2) id = m2[1];
+
+      if (id) {
+        // thumbnail 格式通常比 uc?export=view 更穩定
+        return `https://drive.google.com/thumbnail?id=${id}&sz=w1000`;
       }
-      // 已經是 uc? 格式或其他
       return url.trim();
     }
 
@@ -288,86 +293,88 @@
       };
     }
 
-// ===================== 提交 =====================
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxWhzIKcYh4Uot2cWkO1r-k5pI5hvvTCQC3MDQl4eVSP9pt9zw-3PNes69Q4jwLB4l6/exec";
+    // ===================== 提交 =====================
+    // 請把這裡換成你部署後的 Apps Script Web App URL
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxWhzIKcYh4Uot2cWkO1r-k5pI5hvvTCQC3MDQl4eVSP9pt9zw-3PNes69Q4jwLB4l6/exec";
 
-document.getElementById("submitBtn").addEventListener("click", async () => {
-  const teacher = document.getElementById("teacher").value;
-  const subject = document.getElementById("subject").value;
-  const grade = document.getElementById("grade").value;
-  const ai_tool = document.getElementById("ai_tool").value.trim();
-  const method = document.getElementById("method").value.trim();
-  const description = document.getElementById("description").value.trim();
+    document.getElementById("submitBtn").addEventListener("click", async () => {
+      const teacher = document.getElementById("teacher").value;
+      const subject = document.getElementById("subject").value;
+      const grade = document.getElementById("grade").value;
+      const ai_tool = document.getElementById("ai_tool").value.trim();
+      const method = document.getElementById("method").value.trim();
+      const description = document.getElementById("description").value.trim();
 
-  if (!teacher || !subject || !grade) {
-    alert("請選擇老師、科目與適用年級");
-    return;
-  }
-  if (!ai_tool || !method || !description) {
-    alert("請先完成自動填入（AI 工具、使用方法、詳細描述為必填）");
-    return;
-  }
+      if (!teacher || !subject || !grade) {
+        alert("請選擇老師、科目與適用年級");
+        return;
+      }
+      if (!ai_tool || !method || !description) {
+        alert("請先完成自動填入（AI 工具、使用方法、詳細描述為必填）");
+        return;
+      }
 
-  const imgData = processImageUrls(document.getElementById("image_urls").value);
-  const payload = {
-    teacher,
-    subject,
-    grade,
-    ai_tool,
-    method,
-    description,
-    scenario: document.getElementById("scenario").value.trim(),
-    tags: document.getElementById("tags").value.trim(),
-    notes: document.getElementById("notes").value.trim() || "無",
-    cover_image: imgData.cover,
-    image_urls: imgData.all,
-    raw_paste: document.getElementById("rawPaste").value.trim()
-  };
+      const imgData = processImageUrls(document.getElementById("image_urls").value);
+      const payload = {
+        teacher,
+        subject,
+        grade,
+        ai_tool,
+        method,
+        description,
+        scenario: document.getElementById("scenario").value.trim(),
+        tags: document.getElementById("tags").value.trim(),
+        notes: document.getElementById("notes").value.trim() || "無",
+        cover_image: imgData.cover,
+        image_urls: imgData.all,
+        raw_paste: document.getElementById("rawPaste").value.trim()
+      };
 
-  const btn = document.getElementById("submitBtn");
-  const msg = document.getElementById("message");
-  btn.disabled = true;
-  btn.textContent = "提交中...";
-  msg.textContent = "";
-  msg.className = "mt-4 text-center text-sm";
+      const btn = document.getElementById("submitBtn");
+      const msg = document.getElementById("message");
+      btn.disabled = true;
+      btn.textContent = "提交中...";
+      msg.textContent = "";
+      msg.className = "mt-4 text-center text-sm";
 
-  try {
-    // 使用 no-cors 避開 preflight 問題
-    await fetch(APPS_SCRIPT_URL, {
-      method: "POST",
-      mode: "no-cors",                          // 關鍵
-      headers: {
-        "Content-Type": "text/plain;charset=utf-8"
-      },
-      body: JSON.stringify(payload)
+      try {
+        // 重要：用 text/plain 可大幅降低 CORS 問題
+        const res = await fetch(APPS_SCRIPT_URL, {
+          method: "POST",
+          headers: { 
+            "Content-Type": "text/plain;charset=utf-8"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await res.json();
+        if (result.success) {
+          msg.textContent = "提交成功！感謝你的分享。";
+          msg.classList.add("text-emerald-600");
+          // 清空表單
+          document.getElementById("rawPaste").value = "";
+          document.getElementById("ai_tool").value = "";
+          document.getElementById("method").value = "";
+          document.getElementById("description").value = "";
+          document.getElementById("scenario").value = "";
+          document.getElementById("tags").value = "";
+          document.getElementById("notes").value = "";
+          document.getElementById("teacher").value = "";
+          document.getElementById("subject").value = "";
+          document.getElementById("grade").value = "";
+          document.getElementById("image_urls").value = "";
+        } else {
+          throw new Error(result.error || "提交失敗");
+        }
+      } catch (err) {
+        console.error(err);
+        msg.textContent = "提交失敗：" + err.message + "（請檢查 Apps Script URL 是否正確，或重新部署）";
+        msg.classList.add("text-red-600");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "提交分享";
+      }
     });
-
-    // no-cors 模式下無法讀取回傳內容，所以樂觀顯示成功
-    msg.textContent = "已送出！請到 Google Sheet 確認是否成功寫入。";
-    msg.classList.add("text-emerald-600");
-
-    // 清空表單
-    document.getElementById("rawPaste").value = "";
-    document.getElementById("ai_tool").value = "";
-    document.getElementById("method").value = "";
-    document.getElementById("description").value = "";
-    document.getElementById("scenario").value = "";
-    document.getElementById("tags").value = "";
-    document.getElementById("notes").value = "";
-    document.getElementById("teacher").value = "";
-    document.getElementById("subject").value = "";
-    document.getElementById("grade").value = "";
-    document.getElementById("image_urls").value = "";
-
-  } catch (err) {
-    console.error(err);
-    msg.textContent = "提交失敗：" + err.message;
-    msg.classList.add("text-red-600");
-  } finally {
-    btn.disabled = false;
-    btn.textContent = "提交分享";
-  }
-});
 
     // 初始化
     initSelects();
