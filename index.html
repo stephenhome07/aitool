@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 教學知識庫</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif; }
+    .line-clamp-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .line-clamp-3 {
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+  <!-- 導覽列 -->
+  <nav class="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="font-bold text-lg text-blue-700">AI 教學知識庫</div>
+      <div class="space-x-4 text-sm">
+        <a href="index.html" class="text-blue-600 font-medium">首頁</a>
+        <a href="stats.html" class="text-slate-600 hover:text-blue-600">統計</a>
+        <a href="add.html" class="text-slate-600 hover:text-blue-600">新增分享</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-6xl mx-auto px-4 py-8">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+      <div>
+        <h1 class="text-2xl font-bold">全校 AI 教學實戰分享</h1>
+        <p class="text-slate-500 text-sm mt-1">搜尋、瀏覽同事的 AI 教學方法</p>
+      </div>
+      <a href="add.html" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+        + 新增分享
+      </a>
+    </div>
+
+    <!-- 搜尋 + 篩選 -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
+      <div class="flex flex-col md:flex-row gap-3">
+        <input id="searchInput" type="text" placeholder="搜尋關鍵字（工具、方法、描述...）" 
+               class="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+        
+        <select id="filterSubject" class="border border-slate-300 rounded-lg px-3 py-2 text-sm">
+          <option value="">全部科目</option>
+        </select>
+        
+        <select id="filterTool" class="border border-slate-300 rounded-lg px-3 py-2 text-sm">
+          <option value="">全部工具</option>
+        </select>
+        
+        <select id="filterGrade" class="border border-slate-300 rounded-lg px-3 py-2 text-sm">
+          <option value="">全部年級</option>
+          <option value="中一">中一</option>
+          <option value="中二">中二</option>
+          <option value="中三">中三</option>
+          <option value="中四">中四</option>
+          <option value="中五">中五</option>
+          <option value="中六">中六</option>
+          <option value="NA">NA</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 結果數量 -->
+    <p id="resultCount" class="text-sm text-slate-500 mb-4"></p>
+
+    <!-- 卡片牆 -->
+    <div id="cardGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      <!-- 卡片會由 JS 動態產生 -->
+    </div>
+
+    <!-- 載入中 / 無資料 -->
+    <div id="loading" class="text-center py-16 text-slate-400">
+      載入中...
+    </div>
+    <div id="empty" class="hidden text-center py-16 text-slate-400">
+      目前沒有符合的分享
+    </div>
+  </main>
+
+  <!-- 詳細 Modal -->
+  <div id="detailModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
+      <div class="sticky top-0 bg-white border-b px-5 py-4 flex items-center justify-between">
+        <h2 id="modalTitle" class="font-bold text-lg"></h2>
+        <button id="closeModal" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+      </div>
+      <div id="modalBody" class="p-5 space-y-4">
+        <!-- 內容動態填入 -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ========== 請確認這是你的 Apps Script URL ==========
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxWhzIKcYh4Uot2cWkO1r-k5pI5hvvTCQC3MDQl4eVSP9pt9zw-3PNes69Q4jwLB4l6/exec";
+
+    let allRecords = [];
+
+    // 載入資料
+    async function loadData() {
+      const loading = document.getElementById("loading");
+      const empty = document.getElementById("empty");
+      const grid = document.getElementById("cardGrid");
+
+      try {
+        const res = await fetch(APPS_SCRIPT_URL + "?action=list");
+        const data = await res.json();
+
+        if (data.success) {
+          allRecords = data.records || [];
+          populateFilters(allRecords);
+          renderCards(allRecords);
+        } else {
+          loading.textContent = "載入失敗：" + (data.error || "未知錯誤");
+        }
+      } catch (err) {
+        console.error(err);
+        loading.innerHTML = `載入失敗（可能是 CORS）。<br>請確認已重新部署 Apps Script 新版本。<br><span class="text-xs">${err.message}</span>`;
+      }
+    }
+
+    // 填入篩選下拉
+    function populateFilters(records) {
+      const subjects = [...new Set(records.map(r => r.subject).filter(Boolean))].sort();
+      const tools = [...new Set(records.map(r => r.ai_tool).filter(Boolean))].sort();
+
+      const subjectSelect = document.getElementById("filterSubject");
+      subjects.forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s;
+        opt.textContent = s;
+        subjectSelect.appendChild(opt);
+      });
+
+      const toolSelect = document.getElementById("filterTool");
+      tools.forEach(t => {
+        const opt = document.createElement("option");
+        opt.value = t;
+        opt.textContent = t;
+        toolSelect.appendChild(opt);
+      });
+    }
+
+    // 渲染卡片
+    function renderCards(records) {
+      const grid = document.getElementById("cardGrid");
+      const loading = document.getElementById("loading");
+      const empty = document.getElementById("empty");
+      const countEl = document.getElementById("resultCount");
+
+      loading.classList.add("hidden");
+      grid.innerHTML = "";
+
+      if (records.length === 0) {
+        empty.classList.remove("hidden");
+        countEl.textContent = "";
+        return;
+      }
+
+      empty.classList.add("hidden");
+      countEl.textContent = `共 ${records.length} 筆分享`;
+
+      records.forEach(r => {
+        const card = document.createElement("div");
+        card.className = "bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition cursor-pointer";
+        card.onclick = () => openDetail(r);
+
+        const cover = r.cover_image 
+          ? `<img src="${r.cover_image}" alt="封面" class="w-full h-40 object-cover" onerror="this.src='https://via.placeholder.com/400x200?text=No+Image'">`
+          : `<div class="w-full h-40 bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center text-blue-400 text-sm">暫無封面</div>`;
+
+        card.innerHTML = `
+          ${cover}
+          <div class="p-4">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">${r.subject || "-"}</span>
+              <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded">${r.grade || "-"}</span>
+            </div>
+            <h3 class="font-semibold text-base mb-1 line-clamp-2">${r.method || r.ai_tool || "未命名方法"}</h3>
+            <p class="text-sm text-slate-500 mb-2">工具：${r.ai_tool || "-"} ｜ ${r.teacher || "-"}</p>
+            <p class="text-sm text-slate-600 line-clamp-3">${r.description || ""}</p>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    // 篩選 + 搜尋
+    function applyFilters() {
+      const keyword = document.getElementById("searchInput").value.trim().toLowerCase();
+      const subject = document.getElementById("filterSubject").value;
+      const tool = document.getElementById("filterTool").value;
+      const grade = document.getElementById("filterGrade").value;
+
+      let filtered = allRecords.filter(r => {
+        const matchKeyword = !keyword || 
+          (r.method || "").toLowerCase().includes(keyword) ||
+          (r.description || "").toLowerCase().includes(keyword) ||
+          (r.ai_tool || "").toLowerCase().includes(keyword) ||
+          (r.tags || "").toLowerCase().includes(keyword) ||
+          (r.teacher || "").toLowerCase().includes(keyword) ||
+          (r.subject || "").toLowerCase().includes(keyword);
+
+        const matchSubject = !subject || r.subject === subject;
+        const matchTool = !tool || r.ai_tool === tool;
+        const matchGrade = !grade || r.grade === grade;
+
+        return matchKeyword && matchSubject && matchTool && matchGrade;
+      });
+
+      renderCards(filtered);
+    }
+
+    // 詳細 Modal
+    function openDetail(r) {
+      document.getElementById("modalTitle").textContent = r.method || r.ai_tool || "詳細內容";
+      
+      let imagesHtml = "";
+      if (r.image_urls) {
+        const urls = r.image_urls.split(" | ").filter(u => u.trim());
+        if (urls.length > 0) {
+          imagesHtml = `<div class="grid grid-cols-2 gap-2 mb-4">
+            ${urls.map(u => `<img src="${u}" class="rounded-lg w-full h-32 object-cover" onerror="this.style.display='none'">`).join("")}
+          </div>`;
+        }
+      } else if (r.cover_image) {
+        imagesHtml = `<img src="${r.cover_image}" class="rounded-lg w-full max-h-60 object-cover mb-4" onerror="this.style.display='none'">`;
+      }
+
+      document.getElementById("modalBody").innerHTML = `
+        ${imagesHtml}
+        <div class="flex flex-wrap gap-2 text-sm">
+          <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded">科目：${r.subject || "-"}</span>
+          <span class="bg-slate-100 text-slate-700 px-2 py-1 rounded">年級：${r.grade || "-"}</span>
+          <span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded">工具：${r.ai_tool || "-"}</span>
+          <span class="bg-amber-100 text-amber-700 px-2 py-1 rounded">老師：${r.teacher || "-"}</span>
+        </div>
+        <div>
+          <h4 class="font-medium text-sm text-slate-500 mb-1">使用方法</h4>
+          <p>${r.method || "-"}</p>
+        </div>
+        <div>
+          <h4 class="font-medium text-sm text-slate-500 mb-1">詳細描述</h4>
+          <p class="whitespace-pre-wrap">${r.description || "-"}</p>
+        </div>
+        <div>
+          <h4 class="font-medium text-sm text-slate-500 mb-1">適用場景</h4>
+          <p>${r.scenario || "-"}</p>
+        </div>
+        <div>
+          <h4 class="font-medium text-sm text-slate-500 mb-1">標籤</h4>
+          <p>${r.tags || "-"}</p>
+        </div>
+        <div>
+          <h4 class="font-medium text-sm text-slate-500 mb-1">注意事項</h4>
+          <p>${r.notes || "-"}</p>
+        </div>
+        <p class="text-xs text-slate-400 pt-2">提交時間：${r.created_at || "-"}</p>
+      `;
+
+      document.getElementById("detailModal").classList.remove("hidden");
+    }
+
+    document.getElementById("closeModal").addEventListener("click", () => {
+      document.getElementById("detailModal").classList.add("hidden");
+    });
+
+    document.getElementById("detailModal").addEventListener("click", (e) => {
+      if (e.target === document.getElementById("detailModal")) {
+        document.getElementById("detailModal").classList.add("hidden");
+      }
+    });
+
+    // 事件監聽
+    document.getElementById("searchInput").addEventListener("input", applyFilters);
+    document.getElementById("filterSubject").addEventListener("change", applyFilters);
+    document.getElementById("filterTool").addEventListener("change", applyFilters);
+    document.getElementById("filterGrade").addEventListener("change", applyFilters);
+
+    // 啟動
+    loadData();
+  </script>
+</body>
+</html>

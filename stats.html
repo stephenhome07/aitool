@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 教學知識庫 - 統計</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+  <nav class="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="font-bold text-lg text-blue-700">AI 教學知識庫</div>
+      <div class="space-x-4 text-sm">
+        <a href="index.html" class="text-slate-600 hover:text-blue-600">首頁</a>
+        <a href="stats.html" class="text-blue-600 font-medium">統計</a>
+        <a href="add.html" class="text-slate-600 hover:text-blue-600">新增分享</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-6xl mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold mb-6">使用統計</h1>
+
+    <div id="loading" class="text-center py-16 text-slate-400">載入中...</div>
+
+    <div id="content" class="hidden space-y-8">
+      <!-- 總覽數字 -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white rounded-xl border p-5 text-center">
+          <div id="totalCount" class="text-3xl font-bold text-blue-600">0</div>
+          <div class="text-sm text-slate-500 mt-1">總分享數</div>
+        </div>
+        <div class="bg-white rounded-xl border p-5 text-center">
+          <div id="subjectCount" class="text-3xl font-bold text-emerald-600">0</div>
+          <div class="text-sm text-slate-500 mt-1">涉及科目</div>
+        </div>
+        <div class="bg-white rounded-xl border p-5 text-center">
+          <div id="toolCount" class="text-3xl font-bold text-amber-600">0</div>
+          <div class="text-sm text-slate-500 mt-1">使用工具</div>
+        </div>
+        <div class="bg-white rounded-xl border p-5 text-center">
+          <div id="teacherCount" class="text-3xl font-bold text-indigo-600">0</div>
+          <div class="text-sm text-slate-500 mt-1">貢獻老師</div>
+        </div>
+      </div>
+
+      <!-- 圖表 -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white rounded-xl border p-5">
+          <h2 class="font-semibold mb-4">按科目統計</h2>
+          <canvas id="subjectChart" height="260"></canvas>
+        </div>
+        <div class="bg-white rounded-xl border p-5">
+          <h2 class="font-semibold mb-4">按 AI 工具統計</h2>
+          <canvas id="toolChart" height="260"></canvas>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border p-5">
+        <h2 class="font-semibold mb-4">按老師貢獻數</h2>
+        <canvas id="teacherChart" height="200"></canvas>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxWhzIKcYh4Uot2cWkO1r-k5pI5hvvTCQC3MDQl4eVSP9pt9zw-3PNes69Q4jwLB4l6/exec";
+
+    async function loadStats() {
+      try {
+        const res = await fetch(APPS_SCRIPT_URL + "?action=list");
+        const data = await res.json();
+
+        if (!data.success) {
+          document.getElementById("loading").textContent = "載入失敗：" + (data.error || "");
+          return;
+        }
+
+        const records = data.records || [];
+        document.getElementById("loading").classList.add("hidden");
+        document.getElementById("content").classList.remove("hidden");
+
+        // 總覽
+        document.getElementById("totalCount").textContent = records.length;
+        document.getElementById("subjectCount").textContent = new Set(records.map(r => r.subject)).size;
+        document.getElementById("toolCount").textContent = new Set(records.map(r => r.ai_tool)).size;
+        document.getElementById("teacherCount").textContent = new Set(records.map(r => r.teacher)).size;
+
+        // 計算次數
+        function countBy(key) {
+          const map = {};
+          records.forEach(r => {
+            const k = r[key] || "未填";
+            map[k] = (map[k] || 0) + 1;
+          });
+          return map;
+        }
+
+        const subjectMap = countBy("subject");
+        const toolMap = countBy("ai_tool");
+        const teacherMap = countBy("teacher");
+
+        // 科目圖
+        new Chart(document.getElementById("subjectChart"), {
+          type: "bar",
+          data: {
+            labels: Object.keys(subjectMap),
+            datasets: [{
+              label: "分享數",
+              data: Object.values(subjectMap),
+              backgroundColor: "#3b82f6"
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+          }
+        });
+
+        // 工具圖
+        new Chart(document.getElementById("toolChart"), {
+          type: "doughnut",
+          data: {
+            labels: Object.keys(toolMap),
+            datasets: [{
+              data: Object.values(toolMap),
+              backgroundColor: ["#3b82f6","#10b981","#f59e0b","#8b5cf6","#ef4444","#06b6d4","#84cc16"]
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { position: "bottom" } }
+          }
+        });
+
+        // 老師圖
+        const teacherLabels = Object.keys(teacherMap);
+        const teacherData = Object.values(teacherMap);
+        new Chart(document.getElementById("teacherChart"), {
+          type: "bar",
+          data: {
+            labels: teacherLabels,
+            datasets: [{
+              label: "分享數",
+              data: teacherData,
+              backgroundColor: "#6366f1"
+            }]
+          },
+          options: {
+            indexAxis: "y",
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } }
+          }
+        });
+
+      } catch (err) {
+        document.getElementById("loading").innerHTML = `載入失敗<br><span class="text-xs">${err.message}</span>`;
+      }
+    }
+
+    loadStats();
+  </script>
+</body>
+</html>
