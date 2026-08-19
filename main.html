@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 教學知識庫 - 新增分享</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+  <!-- 導覽列 -->
+  <nav class="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="font-bold text-lg text-blue-700">AI 教學知識庫</div>
+      <div class="space-x-4 text-sm">
+        <a href="index.html" class="text-slate-600 hover:text-blue-600">首頁</a>
+        <a href="stats.html" class="text-slate-600 hover:text-blue-600">統計</a>
+        <a href="add.html" class="text-blue-600 font-medium">新增分享</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-3xl mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold mb-2">新增 AI 教學實戰分享</h1>
+    <p class="text-slate-500 mb-6">只需幾個簡單步驟，分享你的 AI 教學方法給全校同事</p>
+
+    <!-- 步驟提示 -->
+    <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-8 text-sm">
+      <ol class="list-decimal list-inside space-y-1 text-blue-900">
+        <li>按下方按鈕複製 AI Prompt，貼到 Gemini</li>
+        <li>把 AI 回傳的結構化內容整段複製</li>
+        <li>貼到下方文字框，按「自動填入」</li>
+        <li>確認內容，選擇老師／科目／年級</li>
+        <li>上傳圖片到 Drive 並貼上連結 → 提交</li>
+      </ol>
+    </div>
+
+    <!-- 一鍵複製 Prompt -->
+    <div class="mb-6">
+      <button id="copyPromptBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition flex items-center justify-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+        </svg>
+        一鍵複製 AI Prompt
+      </button>
+      <p id="copyMsg" class="text-center text-sm text-emerald-600 mt-2 hidden">已複製！請到 Gemini 貼上</p>
+    </div>
+
+    <!-- 貼上區 -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-6">
+      <label class="block font-medium mb-2">貼上 AI 回傳的結構化內容</label>
+      <textarea id="rawPaste" rows="8" class="w-full border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="請把 Gemini 回傳的【AI工具】【使用方法】... 整段貼在這裡"></textarea>
+      <button id="autoFillBtn" class="mt-3 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition">
+        自動填入
+      </button>
+    </div>
+
+    <!-- 自動填入後的欄位 -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-6 space-y-4">
+      <h2 class="font-semibold text-lg border-b pb-2">自動填入內容（可微調）</h2>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">AI 工具</label>
+        <input id="ai_tool" type="text" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">使用方法</label>
+        <input id="method" type="text" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">詳細描述</label>
+        <textarea id="description" rows="4" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"></textarea>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">適用場景</label>
+        <input id="scenario" type="text" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">標籤（逗號分隔）</label>
+        <input id="tags" type="text" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">注意事項</label>
+        <input id="notes" type="text" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+      </div>
+    </div>
+
+    <!-- 手動下拉區 -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-6 space-y-4">
+      <h2 class="font-semibold text-lg border-b pb-2">請選擇以下資料</h2>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">老師名稱（INITIAL） <span class="text-red-500">*</span></label>
+        <select id="teacher" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" required>
+          <option value="">請選擇</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">科目 <span class="text-red-500">*</span></label>
+        <select id="subject" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" required>
+          <option value="">請選擇</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">適用年級 <span class="text-red-500">*</span></label>
+        <select id="grade" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" required>
+          <option value="">請選擇</option>
+          <option value="中一">中一</option>
+          <option value="中二">中二</option>
+          <option value="中三">中三</option>
+          <option value="中四">中四</option>
+          <option value="中五">中五</option>
+          <option value="中六">中六</option>
+          <option value="NA">NA</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 圖片區 -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-8">
+      <h2 class="font-semibold text-lg border-b pb-2 mb-4">上傳圖片（1–5 張）</h2>
+      
+      <a href="https://drive.google.com/drive/folders/19DZnTodZQCh3NIOwVs_8fHcOGzB5bxN7?usp=sharing" 
+         target="_blank"
+         class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium mb-4 transition">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+        </svg>
+        開啟圖片上傳資料夾
+      </a>
+
+      <p class="text-sm text-slate-600 mb-3">
+        請先到資料夾上傳 1–5 張圖片，然後複製每張圖的連結，貼到下方（<strong>一行一個連結</strong>）。系統會自動用第一張作為封面。
+      </p>
+
+      <textarea id="image_urls" rows="4" class="w-full border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500" placeholder="https://drive.google.com/file/d/xxxxx/view&#10;https://drive.google.com/file/d/yyyyy/view"></textarea>
+    </div>
+
+    <!-- 提交 -->
+    <button id="submitBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl text-lg shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed">
+      提交分享
+    </button>
+
+    <p id="message" class="mt-4 text-center text-sm"></p>
+  </main>
+
+  <script>
+    // ===================== 資料名單 =====================
+    const teachers = [
+      "AKL","ALN","CCC","CCN","CKC","CKF","CKH","CKL","CKO","CSN","CSK","CCU","CWM","CYK",
+      "FCE","FCK","FLY","FSY","FYK","HCF","HKA","HYF","IKY","LHW","LKR","LKY","LLN","LLO",
+      "LLY","LMC","LSZ","LSH","LUY","LWI","LWS","LYF","LYG","LYN","LYP","LYS","LYU","LYW",
+      "MSW","MWT","NAN","NFL","SCM","SCY","SMY","SYS","TCL","TCH","TLN","TMC","TSL","TTC",
+      "WCK","WCY","WLK","WMK","WYC","YCH","YMY","YPK","YTH","YTS","YTY","YWS"
+    ].sort();
+
+    const subjects = [
+      "中國語文","英國語文","數學","公民與社會發展科","公民、經濟及社會","中國歷史","歷史",
+      "地理","經濟","普通話","價值教育","綜合科學","生物","化學","物理",
+      "科技與生活","資訊科技與通訊科技","健康管理與社會關懷","視覺藝術","音樂","體育",
+      "旅遊與款待","圖書館","班主任","行政","其他"
+    ];
+
+    // ===================== 初始化下拉選單 =====================
+    function initSelects() {
+      const teacherSelect = document.getElementById("teacher");
+      teachers.forEach(t => {
+        const opt = document.createElement("option");
+        opt.value = t;
+        opt.textContent = t;
+        teacherSelect.appendChild(opt);
+      });
+
+      const subjectSelect = document.getElementById("subject");
+      subjects.forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s;
+        opt.textContent = s;
+        subjectSelect.appendChild(opt);
+      });
+    }
+
+    // ===================== 一鍵複製 Prompt =====================
+    const PROMPT_TEXT = `請根據我以下的描述，整理成以下固定格式（只輸出格式內容，不要加其他說明）：
+
+【AI工具】：
+【使用方法】：
+【詳細描述】：
+【適用場景】：
+【標籤】：
+【注意事項】：
+
+要求：
+- 【AI工具】只寫主要使用的工具名稱（例如 Gemini、Professor E、SolidMemory、Edpuzzle 等）
+- 【使用方法】用簡短詞語（例如：個人化練習、弱點分析、反思引導、教材生成、AI批改）
+- 【詳細描述】用 3–6 句完整說明怎樣用、效果如何
+- 【適用場景】簡單說明在什麼情況使用
+- 【標籤】用逗號分隔，最多 5 個
+- 【注意事項】如有就寫，沒有就寫「無」`;
+
+    document.getElementById("copyPromptBtn").addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(PROMPT_TEXT);
+        const msg = document.getElementById("copyMsg");
+        msg.classList.remove("hidden");
+        setTimeout(() => msg.classList.add("hidden"), 2500);
+      } catch (err) {
+        alert("複製失敗，請手動複製以下內容：\n\n" + PROMPT_TEXT);
+      }
+    });
+
+    // ===================== 自動填入解析 =====================
+    function parseStructuredText(text) {
+      const result = {
+        ai_tool: "",
+        method: "",
+        description: "",
+        scenario: "",
+        tags: "",
+        notes: ""
+      };
+
+      const patterns = {
+        ai_tool: /【AI工具】[：:]\s*(.+?)(?=\n【|$)/s,
+        method: /【使用方法】[：:]\s*(.+?)(?=\n【|$)/s,
+        description: /【詳細描述】[：:]\s*(.+?)(?=\n【|$)/s,
+        scenario: /【適用場景】[：:]\s*(.+?)(?=\n【|$)/s,
+        tags: /【標籤】[：:]\s*(.+?)(?=\n【|$)/s,
+        notes: /【注意事項】[：:]\s*(.+?)(?=\n【|$)/s
+      };
+
+      for (const [key, regex] of Object.entries(patterns)) {
+        const match = text.match(regex);
+        if (match) {
+          result[key] = match[1].trim().replace(/\n+/g, " ");
+        }
+      }
+      return result;
+    }
+
+    document.getElementById("autoFillBtn").addEventListener("click", () => {
+      const raw = document.getElementById("rawPaste").value.trim();
+      if (!raw) {
+        alert("請先貼上 AI 回傳的內容");
+        return;
+      }
+
+      const data = parseStructuredText(raw);
+      document.getElementById("ai_tool").value = data.ai_tool;
+      document.getElementById("method").value = data.method;
+      document.getElementById("description").value = data.description;
+      document.getElementById("scenario").value = data.scenario;
+      document.getElementById("tags").value = data.tags;
+      document.getElementById("notes").value = data.notes || "無";
+
+      // 滾動到自動填入區
+      document.getElementById("ai_tool").scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+
+    // ===================== 圖片連結處理 =====================
+    function normalizeDriveUrl(url) {
+      // 把 Google Drive 分享連結轉成可直接顯示的格式
+      const fileIdMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      if (fileIdMatch) {
+        return `https://drive.google.com/uc?export=view&id=${fileIdMatch[1]}`;
+      }
+      // 已經是 uc? 格式或其他
+      return url.trim();
+    }
+
+    function processImageUrls(text) {
+      if (!text.trim()) return { cover: "", all: "" };
+      const lines = text.split(/\n+/).map(l => l.trim()).filter(l => l.length > 0);
+      const normalized = lines.map(normalizeDriveUrl);
+      return {
+        cover: normalized[0] || "",
+        all: normalized.join(" | ")
+      };
+    }
+
+    // ===================== 提交 =====================
+    // 請把這裡換成你部署後的 Apps Script Web App URL
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxWhzIKcYh4Uot2cWkO1r-k5pI5hvvTCQC3MDQl4eVSP9pt9zw-3PNes69Q4jwLB4l6/exec";
+
+    document.getElementById("submitBtn").addEventListener("click", async () => {
+      const teacher = document.getElementById("teacher").value;
+      const subject = document.getElementById("subject").value;
+      const grade = document.getElementById("grade").value;
+      const ai_tool = document.getElementById("ai_tool").value.trim();
+      const method = document.getElementById("method").value.trim();
+      const description = document.getElementById("description").value.trim();
+
+      if (!teacher || !subject || !grade) {
+        alert("請選擇老師、科目與適用年級");
+        return;
+      }
+      if (!ai_tool || !method || !description) {
+        alert("請先完成自動填入（AI 工具、使用方法、詳細描述為必填）");
+        return;
+      }
+
+      const imgData = processImageUrls(document.getElementById("image_urls").value);
+      const payload = {
+        teacher,
+        subject,
+        grade,
+        ai_tool,
+        method,
+        description,
+        scenario: document.getElementById("scenario").value.trim(),
+        tags: document.getElementById("tags").value.trim(),
+        notes: document.getElementById("notes").value.trim() || "無",
+        cover_image: imgData.cover,
+        image_urls: imgData.all,
+        raw_paste: document.getElementById("rawPaste").value.trim()
+      };
+
+      const btn = document.getElementById("submitBtn");
+      const msg = document.getElementById("message");
+      btn.disabled = true;
+      btn.textContent = "提交中...";
+      msg.textContent = "";
+      msg.className = "mt-4 text-center text-sm";
+
+      try {
+        const res = await fetch(APPS_SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await res.json();
+        if (result.success) {
+          msg.textContent = "提交成功！感謝你的分享。";
+          msg.classList.add("text-emerald-600");
+          // 清空表單
+          document.getElementById("rawPaste").value = "";
+          document.getElementById("ai_tool").value = "";
+          document.getElementById("method").value = "";
+          document.getElementById("description").value = "";
+          document.getElementById("scenario").value = "";
+          document.getElementById("tags").value = "";
+          document.getElementById("notes").value = "";
+          document.getElementById("teacher").value = "";
+          document.getElementById("subject").value = "";
+          document.getElementById("grade").value = "";
+          document.getElementById("image_urls").value = "";
+        } else {
+          throw new Error(result.error || "提交失敗");
+        }
+      } catch (err) {
+        console.error(err);
+        msg.textContent = "提交失敗：" + err.message + "（請檢查 Apps Script URL 是否正確）";
+        msg.classList.add("text-red-600");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "提交分享";
+      }
+    });
+
+    // 初始化
+    initSelects();
+  </script>
+</body>
+</html>
