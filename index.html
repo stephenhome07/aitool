@@ -154,6 +154,23 @@
       });
     }
 
+    // 把 Google Drive 連結轉成較穩定的縮圖格式
+    function toDriveThumb(url) {
+      if (!url) return "";
+      // 抽出 file id
+      let id = "";
+      const m1 = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      const m2 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      if (m1) id = m1[1];
+      else if (m2) id = m2[1];
+      
+      if (id) {
+        // 使用 thumbnail 格式，通常比較穩定
+        return `https://drive.google.com/thumbnail?id=${id}&sz=w800`;
+      }
+      return url;
+    }
+
     // 渲染卡片
     function renderCards(records) {
       const grid = document.getElementById("cardGrid");
@@ -178,9 +195,11 @@
         card.className = "bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition cursor-pointer";
         card.onclick = () => openDetail(r);
 
-        const cover = r.cover_image 
-          ? `<img src="${r.cover_image}" alt="封面" class="w-full h-40 object-cover" onerror="this.src='https://via.placeholder.com/400x200?text=No+Image'">`
-          : `<div class="w-full h-40 bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center text-blue-400 text-sm">暫無封面</div>`;
+        const thumb = toDriveThumb(r.cover_image);
+        const cover = thumb 
+          ? `<img src="${thumb}" alt="封面" class="w-full h-40 object-cover bg-slate-100" 
+                 onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'w-full h-40 bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center text-blue-500 text-sm\\'>暫無封面</div>'">`
+          : `<div class="w-full h-40 bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center text-blue-500 text-sm">暫無封面</div>`;
 
         card.innerHTML = `
           ${cover}
@@ -233,11 +252,15 @@
         const urls = r.image_urls.split(" | ").filter(u => u.trim());
         if (urls.length > 0) {
           imagesHtml = `<div class="grid grid-cols-2 gap-2 mb-4">
-            ${urls.map(u => `<img src="${u}" class="rounded-lg w-full h-32 object-cover" onerror="this.style.display='none'">`).join("")}
+            ${urls.map(u => {
+              const thumb = toDriveThumb(u);
+              return `<img src="${thumb}" class="rounded-lg w-full h-32 object-cover bg-slate-100" onerror="this.style.display='none'">`;
+            }).join("")}
           </div>`;
         }
       } else if (r.cover_image) {
-        imagesHtml = `<img src="${r.cover_image}" class="rounded-lg w-full max-h-60 object-cover mb-4" onerror="this.style.display='none'">`;
+        const thumb = toDriveThumb(r.cover_image);
+        imagesHtml = `<img src="${thumb}" class="rounded-lg w-full max-h-60 object-cover bg-slate-100 mb-4" onerror="this.style.display='none'">`;
       }
 
       document.getElementById("modalBody").innerHTML = `
