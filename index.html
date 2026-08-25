@@ -104,14 +104,25 @@
   <!-- 詳細 Modal -->
   <div id="detailModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
-      <div class="sticky top-0 bg-white border-b px-5 py-4 flex items-center justify-between">
-        <h2 id="modalTitle" class="font-bold text-lg"></h2>
-        <button id="closeModal" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+      <div class="sticky top-0 bg-white border-b px-5 py-4 flex items-center justify-between gap-3">
+        <h2 id="modalTitle" class="font-bold text-lg flex-1 truncate"></h2>
+        <div class="flex items-center gap-2 shrink-0">
+          <button id="copyDetailBtn" class="text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg transition">
+            複製內容
+          </button>
+          <button id="closeModal" class="text-slate-400 hover:text-slate-600 text-2xl leading-none px-1">&times;</button>
+        </div>
       </div>
       <div id="modalBody" class="p-5 space-y-4">
         <!-- 內容動態填入 -->
       </div>
     </div>
+  </div>
+
+  <!-- 圖片放大 Lightbox -->
+  <div id="imgLightbox" class="fixed inset-0 bg-black/80 z-[60] hidden flex items-center justify-center p-4 cursor-pointer">
+    <button id="closeLightbox" class="absolute top-4 right-4 text-white text-3xl leading-none hover:text-slate-300">&times;</button>
+    <img id="lightboxImg" src="" alt="放大圖" class="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl" onclick="event.stopPropagation()">
   </div>
 
   <script>
@@ -255,8 +266,12 @@
       renderCards(filtered);
     }
 
+    // 目前開啟的詳細資料（給複製用）
+    let currentDetail = null;
+
     // 詳細 Modal
     function openDetail(r) {
+      currentDetail = r;
       document.getElementById("modalTitle").textContent = r.method || r.ai_tool || "詳細內容";
       
       let imagesHtml = "";
@@ -266,13 +281,17 @@
           imagesHtml = `<div class="grid grid-cols-2 gap-2 mb-4">
             ${urls.map(u => {
               const thumb = toDriveThumb(u);
-              return `<img src="${thumb}" class="rounded-lg w-full h-32 object-cover bg-slate-100" onerror="this.style.display='none'">`;
+              return `<img src="${thumb}" class="rounded-lg w-full h-32 object-cover bg-slate-100 cursor-pointer hover:opacity-90 transition" 
+                           onclick="openLightbox('${thumb.replace(/'/g, "\\'")}')" 
+                           onerror="this.style.display='none'" title="點擊放大">`;
             }).join("")}
           </div>`;
         }
       } else if (r.cover_image) {
         const thumb = toDriveThumb(r.cover_image);
-        imagesHtml = `<img src="${thumb}" class="rounded-lg w-full max-h-60 object-cover bg-slate-100 mb-4" onerror="this.style.display='none'">`;
+        imagesHtml = `<img src="${thumb}" class="rounded-lg w-full max-h-60 object-cover bg-slate-100 mb-4 cursor-pointer hover:opacity-90 transition" 
+                           onclick="openLightbox('${thumb.replace(/'/g, "\\'")}')" 
+                           onerror="this.style.display='none'" title="點擊放大">`;
       }
 
       document.getElementById("modalBody").innerHTML = `
@@ -309,6 +328,49 @@
       document.getElementById("detailModal").classList.remove("hidden");
     }
 
+    // 複製詳細內容
+    function copyDetailContent() {
+      if (!currentDetail) return;
+      const r = currentDetail;
+      const text = `【AI工具】：${r.ai_tool || "-"}
+【使用方法】：${r.method || "-"}
+【詳細描述】：${r.description || "-"}
+【適用場景】：${r.scenario || "-"}
+【標籤】：${r.tags || "-"}
+【注意事項】：${r.notes || "-"}
+【科目】：${r.subject || "-"}
+【年級】：${r.grade || "-"}
+【老師】：${r.teacher || "-"}`;
+
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById("copyDetailBtn");
+        const original = btn.textContent;
+        btn.textContent = "已複製！";
+        btn.classList.remove("bg-blue-600", "hover:bg-blue-700");
+        btn.classList.add("bg-emerald-600");
+        setTimeout(() => {
+          btn.textContent = original;
+          btn.classList.add("bg-blue-600", "hover:bg-blue-700");
+          btn.classList.remove("bg-emerald-600");
+        }, 2000);
+      }).catch(() => {
+        alert("複製失敗，請手動選取文字複製");
+      });
+    }
+
+    // 圖片放大
+    function openLightbox(src) {
+      document.getElementById("lightboxImg").src = src;
+      document.getElementById("imgLightbox").classList.remove("hidden");
+    }
+
+    function closeLightbox() {
+      document.getElementById("imgLightbox").classList.add("hidden");
+      document.getElementById("lightboxImg").src = "";
+    }
+
+    document.getElementById("copyDetailBtn").addEventListener("click", copyDetailContent);
+
     document.getElementById("closeModal").addEventListener("click", () => {
       document.getElementById("detailModal").classList.add("hidden");
     });
@@ -317,6 +379,15 @@
       if (e.target === document.getElementById("detailModal")) {
         document.getElementById("detailModal").classList.add("hidden");
       }
+    });
+
+    document.getElementById("closeLightbox").addEventListener("click", (e) => {
+      e.stopPropagation();
+      closeLightbox();
+    });
+
+    document.getElementById("imgLightbox").addEventListener("click", () => {
+      closeLightbox();
     });
 
     // 事件監聽
