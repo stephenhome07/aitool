@@ -85,10 +85,24 @@
         document.getElementById("loading").classList.add("hidden");
         document.getElementById("content").classList.remove("hidden");
 
+        // 把「Gemini、Google Sheets、Apps Script」拆成個別工具來統計
+        function splitTools(text) {
+          if (!text) return ["未填"];
+          return text
+            .split(/[、,，\/\|]/)          // 支援頓號、逗號、斜線、直線
+            .map(t => t.trim())
+            .filter(t => t.length > 0);
+        }
+
         // 總覽
         document.getElementById("totalCount").textContent = records.length;
         document.getElementById("subjectCount").textContent = new Set(records.map(r => r.subject)).size;
-        document.getElementById("toolCount").textContent = new Set(records.map(r => r.ai_tool)).size;
+        
+        // 工具總數改為「拆開後的不重複工具數」
+        const allTools = new Set();
+        records.forEach(r => splitTools(r.ai_tool).forEach(t => allTools.add(t)));
+        document.getElementById("toolCount").textContent = allTools.size;
+        
         document.getElementById("teacherCount").textContent = new Set(records.map(r => r.teacher)).size;
 
         // 計算次數
@@ -101,8 +115,19 @@
           return map;
         }
 
+        // 工具特別處理：拆開後再計數
+        function countTools() {
+          const map = {};
+          records.forEach(r => {
+            splitTools(r.ai_tool).forEach(t => {
+              map[t] = (map[t] || 0) + 1;
+            });
+          });
+          return map;
+        }
+
         const subjectMap = countBy("subject");
-        const toolMap = countBy("ai_tool");
+        const toolMap = countTools();
         const teacherMap = countBy("teacher");
 
         // 科目圖
