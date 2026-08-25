@@ -33,7 +33,7 @@
         <li>按下方按鈕複製 AI Prompt，貼到 Gemini</li>
         <li>把 AI 回傳的結構化內容整段複製</li>
         <li>貼到下方文字框，按「自動填入」</li>
-        <li>確認內容，選擇老師／科目／年級</li>
+        <li>確認內容，選擇老師／科目／年級（年級可多選）</li>
         <li>上傳圖片到 Drive 並貼上連結 → 提交</li>
       </ol>
     </div>
@@ -112,17 +112,20 @@
       </div>
 
       <div>
-        <label class="block text-sm font-medium mb-1">適用年級 <span class="text-red-500">*</span></label>
-        <select id="grade" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" required>
-          <option value="">請選擇</option>
-          <option value="中一">中一</option>
-          <option value="中二">中二</option>
-          <option value="中三">中三</option>
-          <option value="中四">中四</option>
-          <option value="中五">中五</option>
-          <option value="中六">中六</option>
-          <option value="NA">NA</option>
-        </select>
+        <label class="block text-sm font-medium mb-1">適用年級 <span class="text-red-500">*</span>（可多選）</label>
+        <div id="gradeCheckboxes" class="grid grid-cols-3 sm:grid-cols-4 gap-2 mt-1">
+          <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="checkbox" name="grade" value="中一" class="rounded"> 中一</label>
+          <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="checkbox" name="grade" value="中二" class="rounded"> 中二</label>
+          <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="checkbox" name="grade" value="中三" class="rounded"> 中三</label>
+          <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="checkbox" name="grade" value="中四" class="rounded"> 中四</label>
+          <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="checkbox" name="grade" value="中五" class="rounded"> 中五</label>
+          <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="checkbox" name="grade" value="中六" class="rounded"> 中六</label>
+          <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="checkbox" name="grade" value="初中" class="rounded"> 初中</label>
+          <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="checkbox" name="grade" value="高中" class="rounded"> 高中</label>
+          <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="checkbox" name="grade" value="全級" class="rounded"> 全級</label>
+          <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="checkbox" name="grade" value="NA" class="rounded"> NA</label>
+        </div>
+        <p class="text-xs text-slate-500 mt-1">可同時選擇多個，例如「高中」或「中四 + 中五」</p>
       </div>
     </div>
 
@@ -191,7 +194,15 @@
     }
 
     // ===================== 一鍵複製 Prompt =====================
-    const PROMPT_TEXT = `請根據我以下的描述，整理成以下固定格式（只輸出格式內容，不要加其他說明）：
+    const PROMPT_TEXT = `你是一個資料整理助手。請嚴格按照以下格式，把我提供的教學描述整理成結構化資料。
+
+【重要規則】
+1. 只輸出以下 6 個欄位，不要加入任何額外說明、標題、開場白或結尾。
+2. 每個欄位必須以【欄位名稱】：開頭，後面緊接內容。
+3. 如果某個資訊在描述中找不到，該欄位請寫「未提及」。
+4. 不要改變欄位名稱，不要合併欄位。
+
+請用以下格式輸出：
 
 【AI工具】：
 【使用方法】：
@@ -200,13 +211,15 @@
 【標籤】：
 【注意事項】：
 
-要求：
-- 【AI工具】只寫主要使用的工具名稱（例如 Gemini、Professor E、SolidMemory、Edpuzzle 等）
-- 【使用方法】用簡短詞語（例如：個人化練習、弱點分析、反思引導、教材生成、AI批改）
-- 【詳細描述】用 3–6 句完整說明怎樣用、效果如何
-- 【適用場景】簡單說明在什麼情況使用
-- 【標籤】用逗號分隔，最多 5 個
-- 【注意事項】如有就寫，沒有就寫「無」`;
+欄位填寫指引：
+- 【AI工具】：只寫主要工具名稱（例如：Gemini、Professor E、SolidMemory、Edpuzzle、ChatGPT、Claude、學教易、Kahoot 等）。如果有多個，用頓號分隔。
+- 【使用方法】：用 2–6 個字的短詞概括（例如：個人化練習、弱點分析、反思引導、教材生成、AI批改、座位表生成、口語練習）。
+- 【詳細描述】：用 3–6 句完整中文，清楚說明「怎樣用」和「有什麼效果」。不要太短。
+- 【適用場景】：簡單說明在什麼教學情境使用（例如：小測後、考試前溫習、價值教育課、課堂互動）。
+- 【標籤】：用逗號分隔，最多 5 個相關關鍵字（例如：個人化,減負,數據驅動,反思）。
+- 【注意事項】：如果有使用限制、私隱、技術要求或注意點就寫；完全沒有就寫「無」。
+
+以下是我的描述（請開始整理）：`;
 
     document.getElementById("copyPromptBtn").addEventListener("click", async () => {
       try {
@@ -230,19 +243,27 @@
         notes: ""
       };
 
+      // 更寬鬆的解析，支援不同 AI 可能產生的細微差異
       const patterns = {
-        ai_tool: /【AI工具】[：:]\s*(.+?)(?=\n【|$)/s,
-        method: /【使用方法】[：:]\s*(.+?)(?=\n【|$)/s,
-        description: /【詳細描述】[：:]\s*(.+?)(?=\n【|$)/s,
-        scenario: /【適用場景】[：:]\s*(.+?)(?=\n【|$)/s,
-        tags: /【標籤】[：:]\s*(.+?)(?=\n【|$)/s,
-        notes: /【注意事項】[：:]\s*(.+?)(?=\n【|$)/s
+        ai_tool: /【?\s*AI工具\s*】?[：:]\s*([\s\S]*?)(?=\n\s*【|\n\s*使用方法|$)/i,
+        method: /【?\s*使用方法\s*】?[：:]\s*([\s\S]*?)(?=\n\s*【|\n\s*詳細描述|$)/i,
+        description: /【?\s*詳細描述\s*】?[：:]\s*([\s\S]*?)(?=\n\s*【|\n\s*適用場景|$)/i,
+        scenario: /【?\s*適用場景\s*】?[：:]\s*([\s\S]*?)(?=\n\s*【|\n\s*標籤|$)/i,
+        tags: /【?\s*標籤\s*】?[：:]\s*([\s\S]*?)(?=\n\s*【|\n\s*注意事項|$)/i,
+        notes: /【?\s*注意事項\s*】?[：:]\s*([\s\S]*?)(?=\n\s*【|$)/i
       };
 
       for (const [key, regex] of Object.entries(patterns)) {
         const match = text.match(regex);
         if (match) {
-          result[key] = match[1].trim().replace(/\n+/g, " ");
+          let val = match[1].trim();
+          // 詳細描述保留換行，其他欄位壓成單行
+          if (key !== "description") {
+            val = val.replace(/\n+/g, " ").trim();
+          }
+          // 去掉可能殘留的下一欄位標題
+          val = val.replace(/\n?【.+$/s, "").trim();
+          result[key] = val;
         }
       }
       return result;
@@ -300,13 +321,17 @@
     document.getElementById("submitBtn").addEventListener("click", async () => {
       const teacher = document.getElementById("teacher").value;
       const subject = document.getElementById("subject").value;
-      const grade = document.getElementById("grade").value;
+      
+      // 收集多選年級
+      const gradeChecked = Array.from(document.querySelectorAll('input[name="grade"]:checked')).map(cb => cb.value);
+      const grade = gradeChecked.join("、");
+
       const ai_tool = document.getElementById("ai_tool").value.trim();
       const method = document.getElementById("method").value.trim();
       const description = document.getElementById("description").value.trim();
 
-      if (!teacher || !subject || !grade) {
-        alert("請選擇老師、科目與適用年級");
+      if (!teacher || !subject || gradeChecked.length === 0) {
+        alert("請選擇老師、科目與至少一個適用年級");
         return;
       }
       if (!ai_tool || !method || !description) {
@@ -338,37 +363,35 @@
       msg.className = "mt-4 text-center text-sm";
 
       try {
-        // 重要：用 text/plain 可大幅降低 CORS 問題
-        const res = await fetch(APPS_SCRIPT_URL, {
+        // 使用 no-cors 避開 GitHub Pages 與 Apps Script 的 CORS 問題
+        await fetch(APPS_SCRIPT_URL, {
           method: "POST",
+          mode: "no-cors",
           headers: { 
             "Content-Type": "text/plain;charset=utf-8"
           },
           body: JSON.stringify(payload)
         });
 
-        const result = await res.json();
-        if (result.success) {
-          msg.textContent = "提交成功！感謝你的分享。";
-          msg.classList.add("text-emerald-600");
-          // 清空表單
-          document.getElementById("rawPaste").value = "";
-          document.getElementById("ai_tool").value = "";
-          document.getElementById("method").value = "";
-          document.getElementById("description").value = "";
-          document.getElementById("scenario").value = "";
-          document.getElementById("tags").value = "";
-          document.getElementById("notes").value = "";
-          document.getElementById("teacher").value = "";
-          document.getElementById("subject").value = "";
-          document.getElementById("grade").value = "";
-          document.getElementById("image_urls").value = "";
-        } else {
-          throw new Error(result.error || "提交失敗");
-        }
+        // no-cors 無法讀取回傳，樂觀顯示成功（請到 Sheet 確認）
+        msg.textContent = "已送出！請到 Google Sheet 確認是否成功寫入。";
+        msg.classList.add("text-emerald-600");
+
+        // 清空表單
+        document.getElementById("rawPaste").value = "";
+        document.getElementById("ai_tool").value = "";
+        document.getElementById("method").value = "";
+        document.getElementById("description").value = "";
+        document.getElementById("scenario").value = "";
+        document.getElementById("tags").value = "";
+        document.getElementById("notes").value = "";
+        document.getElementById("teacher").value = "";
+        document.getElementById("subject").value = "";
+        document.querySelectorAll('input[name="grade"]').forEach(cb => cb.checked = false);
+        document.getElementById("image_urls").value = "";
       } catch (err) {
         console.error(err);
-        msg.textContent = "提交失敗：" + err.message + "（請檢查 Apps Script URL 是否正確，或重新部署）";
+        msg.textContent = "提交失敗：" + err.message;
         msg.classList.add("text-red-600");
       } finally {
         btn.disabled = false;
