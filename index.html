@@ -68,6 +68,9 @@
           <option value="中四">中四</option>
           <option value="中五">中五</option>
           <option value="中六">中六</option>
+          <option value="初中">初中</option>
+          <option value="高中">高中</option>
+          <option value="全級">全級</option>
           <option value="NA">NA</option>
         </select>
       </div>
@@ -235,7 +238,8 @@
 
         const matchSubject = !subject || r.subject === subject;
         const matchTool = !tool || r.ai_tool === tool;
-        const matchGrade = !grade || r.grade === grade;
+        // 支援多選年級（例如「中四、中五」也能被「中四」篩選到）
+        const matchGrade = !grade || (r.grade || "").includes(grade);
 
         return matchKeyword && matchSubject && matchTool && matchGrade;
       });
