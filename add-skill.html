@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>可譽 AI 教學知識庫 - 新增 Skill 分享 | 嗇色園主辦可譽中學暨可譽小學</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif; }
+  </style>
+</head>
+<body class="bg-sky-50 text-slate-800">
+
+  <!-- 導覽列 -->
+  <nav class="bg-white border-b border-blue-100 sticky top-0 z-10 shadow-sm">
+    <div class="max-w-5xl mx-auto px-4 py-2.5 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <img src="https://drive.google.com/thumbnail?id=1-adSJT0zaLpy_3KlfiJAl43a1v8tmA7_&sz=w120" 
+             alt="可譽校徽" class="h-10 w-10 object-contain"
+             onerror="this.style.display='none'">
+        <div>
+          <div class="font-bold text-base text-blue-900 leading-tight">可譽 AI 教學知識庫</div>
+          <div class="text-xs text-slate-500 leading-tight">嗇色園主辦可譽中學暨可譽小學</div>
+        </div>
+      </div>
+      <div class="space-x-3 text-sm flex flex-wrap justify-end">
+        <a href="index.html" class="text-slate-600 hover:text-blue-700">首頁</a>
+        <a href="stats.html" class="text-slate-600 hover:text-blue-700">統計</a>
+        <a href="add.html" class="text-slate-600 hover:text-blue-700">新增 AI 分享</a>
+        <a href="add-skill.html" class="text-blue-700 font-medium">新增 Skill</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-3xl mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold mb-2 text-blue-900">新增 Gemini Skill 分享</h1>
+    <p class="text-slate-500 mb-6">把你做好的 SKILL.md 與使用方法分享給全校同事，方便大家直接套用</p>
+
+    <!-- 步驟提示 -->
+    <div class="bg-violet-50 border border-violet-100 rounded-xl p-4 mb-8 text-sm">
+      <p class="font-medium text-violet-900 mb-2">建議流程</p>
+      <ol class="list-decimal list-inside space-y-1 text-violet-900">
+        <li>按下方按鈕複製「Skill 提取 Prompt」，貼到你與 Gemini 製作 Skill 的對話中</li>
+        <li>把 AI 回傳的結構化內容整段複製 → 貼到下方 →「自動填入」</li>
+        <li><strong>直接複製 SKILL.md 全文</strong>貼到「SKILL.md 內容」框（推薦，不用上傳 Drive）</li>
+        <li>（選填）也可再貼 Drive 連結給想下載檔案的同事</li>
+        <li>選擇老師／科目／年級 → 提交</li>
+      </ol>
+      <p class="mt-3 text-violet-800 text-xs">同事在首頁點開後可一鍵複製 SKILL.md 全文，再貼進 Gemini Enterprise 使用。</p>
+    </div>
+
+    <!-- 一鍵複製 Prompt -->
+    <div class="mb-6">
+      <button id="copyPromptBtn" class="w-full bg-violet-600 hover:bg-violet-700 text-white font-medium py-3 px-4 rounded-lg transition flex items-center justify-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+        </svg>
+        一鍵複製 Skill 提取 Prompt
+      </button>
+      <p id="copyMsg" class="text-center text-sm text-emerald-600 mt-2 hidden">已複製！請到製作 Skill 的 Gemini 對話貼上</p>
+    </div>
+
+    <!-- 貼上區 -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-6">
+      <label class="block font-medium mb-2">貼上 AI 回傳的結構化內容</label>
+      <textarea id="rawPaste" rows="8" class="w-full border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-violet-500 focus:border-violet-500" placeholder="請把 Gemini 回傳的【Skill名稱】【使用方法】... 整段貼在這裡"></textarea>
+      <button id="autoFillBtn" class="mt-3 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition">
+        自動填入
+      </button>
+    </div>
+
+    <!-- 自動填入後的欄位 -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-6 space-y-4">
+      <h2 class="font-semibold text-lg border-b pb-2">自動填入內容（可微調）</h2>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">Skill 名稱 <span class="text-red-500">*</span></label>
+        <input id="ai_tool" type="text" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500" placeholder="例如：lesson-plan-generator、marking-assistant">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">使用方法（短語） <span class="text-red-500">*</span></label>
+        <input id="method" type="text" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500" placeholder="例如：一鍵備課、自動批改、家長信生成">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">詳細使用說明 <span class="text-red-500">*</span></label>
+        <textarea id="description" rows="6" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500" placeholder="同事看完就能自己用：如何安裝 SKILL.md、何時觸發、輸入什麼、輸出什麼"></textarea>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">適用場景</label>
+        <input id="scenario" type="text" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">標籤（逗號分隔）</label>
+        <input id="tags" type="text" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500" placeholder="Skill,備課,減負,...">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">注意事項</label>
+        <input id="notes" type="text" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500">
+      </div>
+    </div>
+
+    <!-- SKILL.md 內容（推薦直接貼文字） -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-6">
+      <h2 class="font-semibold text-lg border-b pb-2 mb-4">SKILL.md 內容</h2>
+      <p class="text-sm text-slate-600 mb-3">
+        <strong class="text-violet-700">推薦：直接複製貼上</strong> 完整的 <code class="bg-slate-100 px-1 rounded">SKILL.md</code> 文字（含 frontmatter 的 <code class="bg-slate-100 px-1 rounded">---</code> 開頭）。同事在首頁可一鍵複製，不用再上傳 Drive。
+      </p>
+      <label class="block text-sm font-medium mb-1">貼上 SKILL.md 全文 <span class="text-slate-400 font-normal">（建議）</span></label>
+      <textarea id="skill_md_text" rows="10" class="w-full border border-slate-300 rounded-lg p-3 text-sm font-mono focus:ring-2 focus:ring-violet-500 focus:border-violet-500" placeholder="---&#10;name: my-skill&#10;description: ...&#10;---&#10;&#10;# 標題&#10;&#10;使用說明..."></textarea>
+      <p class="text-xs text-slate-500 mt-2 mb-4">從編輯器／Gemini 對話選取全部 SKILL.md 內容 → Ctrl+C → 貼在這裡即可。</p>
+
+      <details class="border border-slate-200 rounded-lg p-3 bg-slate-50">
+        <summary class="text-sm font-medium text-slate-700 cursor-pointer">選填：改用／另加 Drive 連結</summary>
+        <p class="text-xs text-slate-500 mt-2 mb-2">若檔案很大或想讓同事下載原檔，可上傳後貼連結（可與上方全文並存）。</p>
+        <a href="https://drive.google.com/drive/folders/19DZnTodZQCh3NIOwVs_8fHcOGzB5bxN7?usp=sharing" 
+           target="_blank"
+           class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium mb-2 transition">
+          開啟上傳資料夾
+        </a>
+        <input id="skill_file_url" type="text" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500" placeholder="https://drive.google.com/file/d/xxxxx/view">
+      </details>
+    </div>
+
+    <!-- 手動下拉區 -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-6 space-y-4">
+      <h2 class="font-semibold text-lg border-b pb-2">請選擇以下資料</h2>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">老師名稱（INITIAL） <span class="text-red-500">*</span></label>
+        <select id="teacher" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500" required>
+          <option value="">請選擇</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">科目 <span class="text-red-500">*</span></label>
+        <select id="subject" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500" required>
+          <option value="">請選擇</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">適用年級 <span class="text-red-500">*</span>（可多選）</label>
+        <div id="gradeCheckboxes" class="grid grid-cols-3 sm:grid-cols-4 gap-2 mt-1">
+          <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="checkbox" name="grade" value="中一" class="rounded"> 中一</label>
+          <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="checkbox" name="grade" value="中二" class="rounded"> 中二</label>
+          <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="checkbox" name="grade" value="中三" class="rounded"> 中三</label>
+          <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="checkbox" name="grade" value="中四" class="rounded"> 中四</label>
+          <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="checkbox" name="grade" value="中五" class="rounded"> 中五</label>
+          <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="checkbox" name="grade" value="中六" class="rounded"> 中六</label>
+          <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="checkbox" name="grade" value="初中" class="rounded"> 初中</label>
+          <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="checkbox" name="grade" value="高中" class="rounded"> 高中</label>
+          <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="checkbox" name="grade" value="全級" class="rounded"> 全級</label>
+          <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="checkbox" name="grade" value="NA" class="rounded"> NA</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 選用截圖 -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-8">
+      <h2 class="font-semibold text-lg border-b pb-2 mb-4">使用截圖（選填，1–5 張）</h2>
+      <p class="text-sm text-slate-600 mb-3">可上傳使用畫面，方便同事理解。一行一個 Drive 連結。</p>
+      <textarea id="image_urls" rows="3" class="w-full border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-violet-500" placeholder="https://drive.google.com/file/d/xxxxx/view"></textarea>
+    </div>
+
+    <button id="submitBtn" class="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3.5 rounded-xl text-lg shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed">
+      提交 Skill 分享
+    </button>
+    <p id="message" class="mt-4 text-center text-sm"></p>
+  </main>
+
+  <script>
+    const teachers = [
+      "AKL","ALN","CCC","CCN","CKC","CKF","CKH","CKL","CKO","CSN","CSK","CCU","CWM","CYK",
+      "FCE","FCK","FLY","FSY","FYK","HCF","HKA","HYF","IKY","LHW","LKR","LKY","LLN","LLO",
+      "LLY","LMC","LSZ","LSH","LUY","LWI","LWS","LYF","LYG","LYN","LYP","LYS","LYU","LYW",
+      "MSW","MWT","NAN","NFL","SCM","SCY","SMY","SYS","TCL","TCH","TLN","TMC","TSL","TTC",
+      "WCK","WCY","WLK","WMK","WYC","YCH","YMY","YPK","YTH","YTS","YTY","YWS"
+    ].sort();
+
+    const subjects = [
+      "中國語文","英國語文","數學","公民與社會發展科","公民、經濟及社會","中國歷史","歷史",
+      "地理","經濟","普通話","價值教育","綜合科學","生物","化學","物理",
+      "資訊及通訊科技","設計與應用科技","視覺藝術","音樂","體育","其他","跨科","行政"
+    ].sort();
+
+    function initSelects() {
+      const teacherSelect = document.getElementById("teacher");
+      teachers.forEach(t => {
+        const opt = document.createElement("option");
+        opt.value = t;
+        opt.textContent = t;
+        teacherSelect.appendChild(opt);
+      });
+      const subjectSelect = document.getElementById("subject");
+      subjects.forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s;
+        opt.textContent = s;
+        subjectSelect.appendChild(opt);
+      });
+    }
+
+    // ========== Skill 專用提取 Prompt ==========
+    const PROMPT_TEXT = `現在我需要把我們之前製作 Gemini Skill 的對話與成品，整理成可分享給同事的結構化資料。請嚴格按照以下格式輸出。
+
+【重要規則】
+1. 只輸出以下 6 個欄位，不要加入任何額外說明、標題、開場白或結尾。
+2. 每個欄位必須以【欄位名稱】：開頭，後面緊接內容。
+3. 如果某個資訊在對話中找不到，該欄位請寫「未提及」。
+4. 不要改變欄位名稱，不要合併欄位。
+
+請用以下格式輸出：
+【Skill名稱】：
+【使用方法】：
+【詳細描述】：
+【適用場景】：
+【標籤】：
+【注意事項】：
+
+欄位填寫指引：
+- 【Skill名稱】：Skill 的英文/kebab-case 名稱（例如：lesson-plan-generator、parent-letter-writer、marking-assistant）。若對話中有 name: 欄位就直接用。
+- 【使用方法】：用 2–8 個字的短詞概括同事何時該用這個 Skill（例如：一鍵備課、自動批改、家長信草稿、試卷分析）。
+- 【詳細描述】：用 4–8 句完整中文，讓完全沒看過對話的同事也能自己用。必須包含：
+  1) 這個 Skill 解決什麼問題
+  2) 如何取得／安裝 SKILL.md（例如放到 Gemini 指定位置、或貼上內容）
+  3) 觸發方式或典型輸入（對 AI 說什麼、或何時自動載入）
+  4) 預期輸出／效果是什麼
+  建議 300–600 字，可直接被同事複製參考。
+- 【適用場景】：什麼教學或行政情境會用到（例如：備課、小測後分析、家長通訊、跨科專題）。
+- 【標籤】：用逗號分隔，第一個請固定寫「Skill」，其餘最多 4 個關鍵字（例如：Skill,備課,減負,Gemini）。
+- 【注意事項】：版本限制、需要 Enterprise、私隱、檔案大小、或「無」。
+
+以下是我的描述（請開始整理）：`;
+
+    document.getElementById("copyPromptBtn").addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(PROMPT_TEXT);
+        const msg = document.getElementById("copyMsg");
+        msg.classList.remove("hidden");
+        setTimeout(() => msg.classList.add("hidden"), 2500);
+      } catch (err) {
+        alert("複製失敗，請手動複製以下內容：\n\n" + PROMPT_TEXT);
+      }
+    });
+
+    function parseStructuredText(text) {
+      const result = {
+        ai_tool: "",
+        method: "",
+        description: "",
+        scenario: "",
+        tags: "",
+        notes: ""
+      };
+      const patterns = {
+        ai_tool: /【?\s*Skill名稱\s*】?[：:]\s*([\s\S]*?)(?=\n\s*【|\n\s*使用方法|$)/i,
+        method: /【?\s*使用方法\s*】?[：:]\s*([\s\S]*?)(?=\n\s*【|\n\s*詳細描述|$)/i,
+        description: /【?\s*詳細描述\s*】?[：:]\s*([\s\S]*?)(?=\n\s*【|\n\s*適用場景|$)/i,
+        scenario: /【?\s*適用場景\s*】?[：:]\s*([\s\S]*?)(?=\n\s*【|\n\s*標籤|$)/i,
+        tags: /【?\s*標籤\s*】?[：:]\s*([\s\S]*?)(?=\n\s*【|\n\s*注意事項|$)/i,
+        notes: /【?\s*注意事項\s*】?[：:]\s*([\s\S]*?)(?=\n\s*【|$)/i
+      };
+      for (const [key, regex] of Object.entries(patterns)) {
+        const match = text.match(regex);
+        if (match) {
+          let val = match[1].trim();
+          if (key !== "description") {
+            val = val.replace(/\n+/g, " ").trim();
+          }
+          val = val.replace(/\n?【.+$/s, "").trim();
+          result[key] = val;
+        }
+      }
+      // 確保標籤有 Skill
+      if (result.tags && !/skill/i.test(result.tags)) {
+        result.tags = "Skill," + result.tags;
+      } else if (!result.tags) {
+        result.tags = "Skill";
+      }
+      return result;
+    }
+
+    document.getElementById("autoFillBtn").addEventListener("click", () => {
+      const raw = document.getElementById("rawPaste").value.trim();
+      if (!raw) {
+        alert("請先貼上 AI 回傳的內容");
+        return;
+      }
+      const data = parseStructuredText(raw);
+      document.getElementById("ai_tool").value = data.ai_tool;
+      document.getElementById("method").value = data.method;
+      document.getElementById("description").value = data.description;
+      document.getElementById("scenario").value = data.scenario;
+      document.getElementById("tags").value = data.tags;
+      document.getElementById("notes").value = data.notes || "無";
+      document.getElementById("ai_tool").scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+
+    function normalizeDriveUrl(url) {
+      let id = "";
+      const m1 = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      const m2 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      if (m1) id = m1[1];
+      else if (m2) id = m2[1];
+      if (id) return `https://drive.google.com/thumbnail?id=${id}&sz=w1000`;
+      return url.trim();
+    }
+
+    function processImageUrls(text) {
+      if (!text.trim()) return { cover: "", all: "" };
+      const lines = text.split(/\n+/).map(l => l.trim()).filter(l => l.length > 0);
+      const normalized = lines.map(normalizeDriveUrl);
+      return { cover: normalized[0] || "", all: normalized.join(" | ") };
+    }
+
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxWhzIKcYh4Uot2cWkO1r-k5pI5hvvTCQC3MDQl4eVSP9pt9zw-3PNes69Q4jwLB4l6/exec";
+
+    document.getElementById("submitBtn").addEventListener("click", async () => {
+      const teacher = document.getElementById("teacher").value;
+      const subject = document.getElementById("subject").value;
+      const gradeChecked = Array.from(document.querySelectorAll('input[name="grade"]:checked')).map(cb => cb.value);
+      const grade = gradeChecked.join("、");
+      const ai_tool = document.getElementById("ai_tool").value.trim();
+      const method = document.getElementById("method").value.trim();
+      const description = document.getElementById("description").value.trim();
+      const skillFile = document.getElementById("skill_file_url").value.trim();
+      const skillMdText = document.getElementById("skill_md_text").value.trim();
+
+      if (!teacher || !subject || gradeChecked.length === 0) {
+        alert("請選擇老師、科目與至少一個適用年級");
+        return;
+      }
+      if (!ai_tool || !method || !description) {
+        alert("請先完成自動填入（Skill 名稱、使用方法、詳細描述為必填）");
+        return;
+      }
+      if (!skillMdText && !skillFile) {
+        if (!confirm("尚未貼上 SKILL.md 全文，也沒有 Drive 連結。同事將無法取得 Skill 內容，確定仍要提交？")) {
+          return;
+        }
+      }
+
+      // 把 SKILL.md 全文與連結併入 description / notes，方便現有 Sheet 與首頁一鍵複製
+      let notes = document.getElementById("notes").value.trim() || "無";
+      if (skillFile) {
+        notes = (notes === "無" ? "" : notes + " | ") + "SKILL檔案：" + skillFile;
+      }
+
+      let fullDescription = description;
+      if (skillMdText) {
+        fullDescription += "\n\n---SKILL_MD_START---\n" + skillMdText + "\n---SKILL_MD_END---";
+      }
+      if (skillFile) {
+        fullDescription += "\n\n【SKILL.md 下載】：" + skillFile;
+      }
+
+      let tags = document.getElementById("tags").value.trim() || "Skill";
+      if (!/skill/i.test(tags)) tags = "Skill," + tags;
+
+      const imgData = processImageUrls(document.getElementById("image_urls").value);
+
+      // 與既有 AI 分享共用同一 Sheet 結構；ai_tool 欄位放 Skill 名稱
+      const payload = {
+        teacher,
+        subject,
+        grade,
+        ai_tool: "[Skill] " + ai_tool,
+        method,
+        description: fullDescription,
+        scenario: document.getElementById("scenario").value.trim(),
+        tags,
+        notes,
+        cover_image: imgData.cover,
+        image_urls: imgData.all,
+        raw_paste: document.getElementById("rawPaste").value.trim(),
+        share_type: "skill"
+      };
+
+      const btn = document.getElementById("submitBtn");
+      const msg = document.getElementById("message");
+      btn.disabled = true;
+      btn.textContent = "提交中...";
+      msg.textContent = "";
+      msg.className = "mt-4 text-center text-sm";
+
+      try {
+        await fetch(APPS_SCRIPT_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        });
+        msg.textContent = "已送出！請到 Google Sheet 確認是否成功寫入。";
+        msg.classList.add("text-emerald-600");
+        document.getElementById("rawPaste").value = "";
+        document.getElementById("ai_tool").value = "";
+        document.getElementById("method").value = "";
+        document.getElementById("description").value = "";
+        document.getElementById("scenario").value = "";
+        document.getElementById("tags").value = "";
+        document.getElementById("notes").value = "";
+        document.getElementById("skill_md_text").value = "";
+        document.getElementById("skill_file_url").value = "";
+        document.getElementById("teacher").value = "";
+        document.getElementById("subject").value = "";
+        document.querySelectorAll('input[name="grade"]').forEach(cb => cb.checked = false);
+        document.getElementById("image_urls").value = "";
+      } catch (err) {
+        console.error(err);
+        msg.textContent = "提交失敗：" + err.message;
+        msg.classList.add("text-red-600");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "提交 Skill 分享";
+      }
+    });
+
+    initSelects();
+  </script>
+</body>
+</html>
