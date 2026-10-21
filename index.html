@@ -35,10 +35,11 @@
           <div class="text-xs text-slate-500 leading-tight">嗇色園主辦可譽中學暨可譽小學</div>
         </div>
       </div>
-      <div class="space-x-4 text-sm">
+      <div class="space-x-3 text-sm flex flex-wrap justify-end">
         <a href="index.html" class="text-blue-700 font-medium">首頁</a>
         <a href="stats.html" class="text-slate-600 hover:text-blue-700">統計</a>
-        <a href="add.html" class="text-slate-600 hover:text-blue-700">新增分享</a>
+        <a href="add.html" class="text-slate-600 hover:text-blue-700">新增 AI 分享</a>
+        <a href="add-skill.html" class="text-slate-600 hover:text-blue-700">新增 Skill</a>
       </div>
     </div>
   </nav>
@@ -49,9 +50,14 @@
         <h1 class="text-2xl font-bold text-blue-900">全校 AI 教學實戰分享</h1>
         <p class="text-slate-500 text-sm mt-1">嗇色園主辦可譽中學暨可譽小學 · 搜尋、瀏覽同事的 AI 教學方法</p>
       </div>
-      <a href="add.html" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
-        + 新增分享
-      </a>
+      <div class="flex flex-wrap gap-2">
+        <a href="add.html" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+          + 新增 AI 分享
+        </a>
+        <a href="add-skill.html" class="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+          + 新增 Skill
+        </a>
+      </div>
     </div>
 
     <!-- 搜尋 + 篩選 -->
@@ -80,6 +86,12 @@
           <option value="高中">高中</option>
           <option value="全級">全級</option>
           <option value="NA">NA</option>
+        </select>
+
+        <select id="filterType" class="border border-slate-300 rounded-lg px-3 py-2 text-sm">
+          <option value="">全部類型</option>
+          <option value="ai">AI 教學分享</option>
+          <option value="skill">Skill</option>
         </select>
       </div>
     </div>
@@ -226,13 +238,14 @@
         card.innerHTML = `
           ${cover}
           <div class="p-4">
-            <div class="flex items-center gap-2 mb-2">
+            <div class="flex items-center gap-2 mb-2 flex-wrap">
+              ${(r.ai_tool || "").includes("[Skill]") || /skill/i.test(r.tags || "") ? '<span class="text-xs bg-violet-100 text-violet-700 px-2 py-0.5 rounded font-medium">Skill</span>' : ""}
               <span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">${r.subject || "-"}</span>
               <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded">${r.grade || "-"}</span>
             </div>
             <h3 class="font-semibold text-base mb-1 line-clamp-2">${r.method || r.ai_tool || "未命名方法"}</h3>
-            <p class="text-sm text-slate-500 mb-2">工具：${r.ai_tool || "-"} ｜ ${r.teacher || "-"}</p>
-            <p class="text-sm text-slate-600 line-clamp-3">${r.description || ""}</p>
+            <p class="text-sm text-slate-500 mb-2">${(r.ai_tool || "").includes("[Skill]") ? "Skill" : "工具"}：${(r.ai_tool || "-").replace(/^\[Skill\]\s*/, "")} ｜ ${r.teacher || "-"}</p>
+            <p class="text-sm text-slate-600 line-clamp-3">${(r.description || "").replace(/---SKILL_MD_START---[\s\S]*?---SKILL_MD_END---/g, "").trim()}</p>
           </div>
         `;
         grid.appendChild(card);
@@ -240,11 +253,16 @@
     }
 
     // 篩選 + 搜尋
+    function isSkillRecord(r) {
+      return (r.ai_tool || "").includes("[Skill]") || /skill/i.test(r.tags || "");
+    }
+
     function applyFilters() {
       const keyword = document.getElementById("searchInput").value.trim().toLowerCase();
       const subject = document.getElementById("filterSubject").value;
       const tool = document.getElementById("filterTool").value;
       const grade = document.getElementById("filterGrade").value;
+      const type = document.getElementById("filterType") ? document.getElementById("filterType").value : "";
 
       let filtered = allRecords.filter(r => {
         const matchKeyword = !keyword || 
@@ -257,10 +275,11 @@
 
         const matchSubject = !subject || r.subject === subject;
         const matchTool = !tool || r.ai_tool === tool;
-        // 支援多選年級（例如「中四、中五」也能被「中四」篩選到）
         const matchGrade = !grade || (r.grade || "").includes(grade);
+        const skill = isSkillRecord(r);
+        const matchType = !type || (type === "skill" && skill) || (type === "ai" && !skill);
 
-        return matchKeyword && matchSubject && matchTool && matchGrade;
+        return matchKeyword && matchSubject && matchTool && matchGrade && matchType;
       });
 
       renderCards(filtered);
@@ -268,6 +287,32 @@
 
     // 目前開啟的詳細資料（給複製用）
     let currentDetail = null;
+
+
+    function extractSkillMd(description) {
+      if (!description) return { body: description || "", skillMd: "" };
+      const m = description.match(/---SKILL_MD_START---\n([\s\S]*?)\n---SKILL_MD_END---/);
+      if (m) {
+        const skillMd = m[1].trim();
+        const body = description.replace(/\n*---SKILL_MD_START---[\s\S]*?---SKILL_MD_END---\n*/, "\n").trim();
+        return { body, skillMd };
+      }
+      return { body: description, skillMd: "" };
+    }
+
+    function copySkillMd(btn) {
+      const text = window.__currentSkillMd || "";
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(() => {
+        const old = btn.textContent;
+        btn.textContent = "已複製！";
+        btn.classList.add("bg-emerald-600");
+        setTimeout(() => {
+          btn.textContent = old;
+          btn.classList.remove("bg-emerald-600");
+        }, 2000);
+      }).catch(() => alert("複製失敗，請手動選取下方文字複製"));
+    }
 
     // 詳細 Modal
     function openDetail(r) {
@@ -294,12 +339,30 @@
                            onerror="this.style.display='none'" title="點擊放大">`;
       }
 
+      const skillBadge = isSkillRecord(r) ? '<span class="bg-violet-100 text-violet-700 px-2 py-1 rounded font-medium">Skill</span>' : '';
+      const toolLabel = isSkillRecord(r) ? 'Skill 名稱' : '工具';
+      const toolValue = (r.ai_tool || "-").replace(/^\[Skill\]\s*/, "");
+      const { body: descBody, skillMd } = extractSkillMd(r.description || "");
+      window.__currentSkillMd = skillMd;
+      const skillMdBlock = skillMd
+        ? `<div class="border border-violet-200 bg-violet-50 rounded-xl p-4">
+            <div class="flex items-center justify-between gap-2 mb-2">
+              <h4 class="font-medium text-sm text-violet-800">SKILL.md 全文</h4>
+              <button type="button" onclick="copySkillMd(this)" class="text-sm bg-violet-600 hover:bg-violet-700 text-white px-3 py-1.5 rounded-lg transition shrink-0">
+                一鍵複製 SKILL.md
+              </button>
+            </div>
+            <pre class="text-xs whitespace-pre-wrap font-mono bg-white border border-violet-100 rounded-lg p-3 max-h-64 overflow-y-auto text-slate-700">${skillMd.replace(/</g, "&lt;")}</pre>
+            <p class="text-xs text-violet-600 mt-2">複製後可貼到 Gemini Enterprise 使用，或另存為 SKILL.md</p>
+          </div>`
+        : "";
       document.getElementById("modalBody").innerHTML = `
         ${imagesHtml}
         <div class="flex flex-wrap gap-2 text-sm">
+          ${skillBadge}
           <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded">科目：${r.subject || "-"}</span>
           <span class="bg-slate-100 text-slate-700 px-2 py-1 rounded">年級：${r.grade || "-"}</span>
-          <span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded">工具：${r.ai_tool || "-"}</span>
+          <span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded">${toolLabel}：${toolValue}</span>
           <span class="bg-amber-100 text-amber-700 px-2 py-1 rounded">老師：${r.teacher || "-"}</span>
         </div>
         <div>
@@ -308,8 +371,9 @@
         </div>
         <div>
           <h4 class="font-medium text-sm text-slate-500 mb-1">詳細描述</h4>
-          <p class="whitespace-pre-wrap">${r.description || "-"}</p>
+          <p class="whitespace-pre-wrap">${descBody || "-"}</p>
         </div>
+        ${skillMdBlock}
         <div>
           <h4 class="font-medium text-sm text-slate-500 mb-1">適用場景</h4>
           <p>${r.scenario || "-"}</p>
@@ -320,7 +384,7 @@
         </div>
         <div>
           <h4 class="font-medium text-sm text-slate-500 mb-1">注意事項</h4>
-          <p>${r.notes || "-"}</p>
+          <p class="whitespace-pre-wrap">${r.notes || "-"}</p>
         </div>
         <p class="text-xs text-slate-400 pt-2">提交時間：${r.created_at || "-"}</p>
       `;
@@ -395,6 +459,8 @@
     document.getElementById("filterSubject").addEventListener("change", applyFilters);
     document.getElementById("filterTool").addEventListener("change", applyFilters);
     document.getElementById("filterGrade").addEventListener("change", applyFilters);
+    const filterTypeEl = document.getElementById("filterType");
+    if (filterTypeEl) filterTypeEl.addEventListener("change", applyFilters);
 
     // 啟動
     loadData();
